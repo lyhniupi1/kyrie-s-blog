@@ -55,3 +55,44 @@ def ckupload():
 @upload_bp.route("/ttt")
 def ttt():
     return render_template('base.html')
+	
+	
+@upload_bp.route('/ckupload/&responseType=json', methods=['POST'])
+@login_required
+def ckupload_copy():
+    """CKEditor file upload"""
+    error = ''
+    url = ''
+    callback = request.args.get("CKEditorFuncNum")
+    if request.method == 'POST' and 'upload' in request.files:
+        print('niubi')
+        fileobj = request.files['upload']
+        fname, fext = os.path.splitext(fileobj.filename)
+        rnd_name = '%s%s' % (gen_rnd_filename(), fext)
+
+        filepath = os.path.join(current_app.static_folder, 'upload', rnd_name)
+
+        # 检查路径是否存在，不存在则创建
+        dirname = os.path.dirname(filepath)
+        if not os.path.exists(dirname):
+            try:
+                os.makedirs(dirname)
+            except:
+                error = 'ERROR_CREATE_DIR'
+        elif not os.access(dirname, os.W_OK):
+            error = 'ERROR_DIR_NOT_WRITEABLE'
+
+        if not error:
+            fileobj.save(filepath)
+            url = url_for('static', filename='%s/%s' % ('upload', rnd_name))
+    else:
+        error = 'post error'
+
+
+    response = jsonify({
+        "uploaded": 1,
+        "fileName": fname,
+        "url": url,
+    })
+    response.headers["Content-Type"] = "text/html"
+    return response
